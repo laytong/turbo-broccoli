@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>reveal.js</title>
+
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/moon.css" id="theme">
+    <link rel="stylesheet" href="css/custom.css">
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section>
+            <section>
+                <h1>Testing Library</h1>
+                <img src="img/logo.png">
+                <div><small>Writing better tests?</small></div>
+            </section>
+        </section>
+        <section>
+            <section data-auto-animate data-transition-speed="slow">
+                <h2 data-id="how">Guiding principle</h2>
+                <blockquote>
+                    The more your tests resemble your code.
+                    <br>
+                    The more confidence they can give you
+                </blockquote>
+                <div>- Kent C. Dodds -</div>
+            </section>
+            <section data-auto-animate data-transition-speed="slow">
+                <h2 data-id="how">What do we want from our tests?</h2>
+                <ul>
+                    <li>
+                        <b style="color: #eee8d5;">Confidence</b> - That everything still works when we make changes to our code
+                    </li>
+                    <li>
+                        <b style="color: #eee8d5;">Maintainability</b> - That we don't need to change our tests (much) when we make changes
+                    </li>
+                    <li>
+                        <b style="color: #eee8d5;">Reliability</b> - That when we do need to make changes, our tests break for the right reasons
+                    </li>
+                </ul>
+            </section>
+            <section data-auto-animate data-transition-speed="slow">
+                <h2 data-id="how">So how do we achieve this?</h2>
+                <div style="text-align: left;">
+                    We avoid testing implementation details/internals
+                    <br><br>
+                    As these tend to cause false negatives/positives
+                    <br><br>
+                    Common code smell for this might be assertions on:
+                    <ul style="color:#eee8d5; ">
+                        <li>query selectors/css classes</li>
+                        <li>wrapper.state()</li>
+                        <li>wrapper.instance()</li>
+                    </ul>
+                </div>
+                <br><br>
+                <small>https://kentcdodds.com/blog/testing-implementation-details</small>
+                <aside class="notes">
+                    Implementation details: Things that the user will not typically use, see or even know about
+                    When we render with enzyme's shallow we're mostly making assertions on what's going on in the react tree rather than what's happening in the browser
+                    <ul>
+                        <li>And Kent makes the argument that the "user" is no just the user in the browser, but the developer that will consume your component.</li>
+                        <li>our UI tests should be limited to</li>
+                        <li>Rendering the component with props</li>
+                        <li>Querying and interacting with the rendered result</li>
+                    </ul>
+
+                    With this in mind there's an argument to be made: Avoid shallow rendering
+                </aside>
+            </section>
+            <section data-auto-animate>
+                <h2 data-id="how">So how do we achieve this?</h2>
+                We want to avoid shallow rendering.
+                <blockquote class="fragment">
+                    With shallow rendering, I can refactor my component's implementation and my tests break.
+                </blockquote>
+                <blockquote class="fragment">
+                    With shallow rendering, I can break my application and my tests say everything is still working.
+                </blockquote>
+            </section>
+            <section>
+                <b>We're all guilty of this</b>
+                <pre><code data-noescape>
+test('setOpenIndex sets the open index state properly', () => {
+    const wrapper = mount(<Accordion items={[]}/></Accordion>)
+    expect(wrapper.state('openIndex')).toBe(0)
+    wrapper.instance().setOpenIndex(1)
+    expect(wrapper.state('openIndex')).toBe(1)
+})
+                </code></pre>
+                <aside class="notes">
+                    Anytime we refactor, say the name of isOpen, our test will break even though materially the component might still works identically as before
+                    Additionally perhaps we still change the value of isOpen, but perhaps it now does something entirely different,
+                    We've succeeded in testing the implementation detail but not the material impact of the change. Perhaps it opens an entirely different component now?
+                </aside>
+            </section>
+        </section>
+        <section>
+            <section data-auto-animate >
+                <h2 data-id="header">Querying</h2>
+                <img class="stretch" src="img/query-matrix.png">
+                <aside class="notes">
+                    Here is a little matrix to explain the different types of querying tools we have available to us in testing-library
+                </aside>
+            </section>
+            <section data-auto-animate >
+                <h2 data-id="header">Querying</h2>
+                <ul style="list-style: none">
+                    <li>*ByLabelText</li>
+                    <li>*ByRole</li>
+                    <li>*ByText</li>
+                    <li>*ByAltText</li>
+                    <li>*ByTitle</li>
+                    <li>*ByDisplayValue</li>
+                    <li>*ByTestId</li>
+                </ul>
+                <aside class="notes">
+                    Ok so, how do we do things in testing library?
+
+                    With testing-library we focus on assertions and interaction by limiting ourselves only to things we can actually see
+
+                    For example, labels, imgAltText (remember screen readers see this) or just text on the screen.
+                    No more test ids or getting hidden input fields
+
+                    These methods also all explictly include assertions, so no more .toHaveLength(1)
+                    or toBeNull() assertions necessary
+                </aside>
+            </section>
+            <section data-auto-animate>
+                <ul style="list-style: none">
+                    <li >At this point, we can and should just use react itself to render the component instead of mocking things</li>
+                </ul>
+                <div class="fragment">
+                    <h2 data-id="header">Hooray</h2>
+                    <ul style="list-style: none">
+                        <li class="exciting">This has basically removed enzyme</li>
+                    </ul>
+                </div>
+            </section>
+            <section data-auto-animate>
+                <h2 data-id="header">Custom matchers</h2>
+                <ul style="list-style: none">
+                    <li>toBeDisabled</li>
+                    <li>toBeEnabled</li>
+                    <li>toBeEmpty</li>
+                    <li>toBeInTheDocument</li>
+                    <li>toBeRequired</li>
+                    <li>toBeInvalid</li>
+                    <li>toHaveAttribute</li>
+                    <li>toHaveClass</li>
+                    <li>toHaveValue</li>
+                </ul>
+                <aside class="notes">
+                    Testing library also (optionally) extends expect with a bunch of custom matchers that help make a bunch of standard dom assertions easy
+                </aside>
+            </section>
+        </section>
+        <section>
+            <section>
+                <pre>
+                    <code data-line-numbers="2-5|17-21|23-28" data-trim>
+export const ToDoApp = () => {
+    const [items, setItems] = React.useState([]);
+    const [text, setText] = React.useState("");
+
+    const handleChange = (e) => setText(e.target.value);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setText("");
+        setItems(items.concat(newItem));
+    };
+
+    return (
+        <div>
+          <h1>TODOS</h1>
+
+          <ul>
+            {items.map((item) => (
+              <li key={item.id}>{item.text}</li>
+            ))}
+          </ul>
+
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="new-todo">What needs to be done?</label>
+            <br/>
+            <input id="new-todo" value={text} onChange={handleChange}/>
+            <button>Add #{items.length + 1}</button>
+          </form>
+        </div>
+    );
+};
+                    </code>
+                </pre>
+            </section>
+            <section>
+                <a target="_blank" class="stretch" href="https://codesandbox.io/s/testing-libraryreact-txs1r?file=/tests/app.spec.js">
+                    <img src="img/live.gif">
+                </a>
+            </section>
+        </section>
+        <section>
+            <h3>Pros:</h3>
+            <ul>
+                <li>Just as easily write unit and integration tests</li>
+            </ul>
+        </section>
+    </div>
+</div>
+
+<script src="dist/reveal.js"></script>
+<script src="plugin/notes/notes.js"></script>
+<script src="plugin/markdown/markdown.js"></script>
+<script src="plugin/highlight/highlight.js"></script>
+<script>
+    // More info about initialization & config:
+    // - https://revealjs.com/initialization/
+    // - https://revealjs.com/config/
+    Reveal.initialize({
+        hash: true,
+
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+    });
+</script>
+</body>
+</html>

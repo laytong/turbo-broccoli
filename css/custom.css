@@ -1,0 +1,25 @@
+.exciting {
+    animation: disco1 1000ms infinite alternate;
+}
+
+@keyframes disco1 {
+    0% {
+        color: #7bf927;
+    }
+    20% {
+        color: #e41ed8;
+    }
+    40% {
+        color: #ece914;
+    }
+    60% {
+        color: #3434ff;
+    }
+    80% {
+        color: #11d8df;
+    }
+    100% {
+        color: #7bf927;
+
+    }
+}
