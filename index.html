@@ -57,7 +57,7 @@
                     <br><br>
                     Common code smell for this might be assertions on:
                     <ul style="color:#eee8d5; ">
-                        <li>query selectors/css classes</li>
+                        <li>using query selectors/css classes</li>
                         <li>wrapper.state()</li>
                         <li>wrapper.instance()</li>
                     </ul>
@@ -66,20 +66,18 @@
                 <small>https://kentcdodds.com/blog/testing-implementation-details</small>
                 <aside class="notes">
                     Implementation details: Things that the user will not typically use, see or even know about
-                    When we render with enzyme's shallow we're mostly making assertions on what's going on in the react tree rather than what's happening in the browser
+                    Additionally, When we render with enzyme's shallow we're mostly making assertions on what's going on in the react tree rather than what's happening in the browser
                     <ul>
-                        <li>And Kent makes the argument that the "user" is no just the user in the browser, but the developer that will consume your component.</li>
-                        <li>our UI tests should be limited to</li>
+                        <li>And Kent makes the argument that the "user" is not just the user in the browser, but the next developer that will consume your component.</li>
+                        <li>our UI tests should be limited to:</li>
                         <li>Rendering the component with props</li>
                         <li>Querying and interacting with the rendered result</li>
                     </ul>
-
-                    With this in mind there's an argument to be made: Avoid shallow rendering
                 </aside>
             </section>
             <section data-auto-animate>
                 <h2 data-id="how">So how do we achieve this?</h2>
-                We want to avoid shallow rendering.
+                A note on the risks of shallow rendering
                 <blockquote class="fragment">
                     With shallow rendering, I can refactor my component's implementation and my tests break.
                 </blockquote>
@@ -88,13 +86,13 @@
                 </blockquote>
             </section>
             <section>
-                <b>We're all guilty of this</b>
-                <pre><code data-noescape>
+                <b>We might all be guilty of this at some point</b>
+                <pre><code class="jsx">
 test('setOpenIndex sets the open index state properly', () => {
-    const wrapper = mount(<Accordion items={[]}/></Accordion>)
-    expect(wrapper.state('openIndex')).toBe(0)
-    wrapper.instance().setOpenIndex(1)
-    expect(wrapper.state('openIndex')).toBe(1)
+    const wrapper = mount(&lt;Accordion items={items} /&gt;);
+    expect(wrapper.state('openIndex')).toBe(0);
+    wrapper.instance().setOpenIndex(1);
+    expect(wrapper.state('openIndex')).toBe(1);
 })
                 </code></pre>
                 <aside class="notes">
@@ -103,8 +101,43 @@ test('setOpenIndex sets the open index state properly', () => {
                     We've succeeded in testing the implementation detail but not the material impact of the change. Perhaps it opens an entirely different component now?
                 </aside>
             </section>
+            <section>
+                What if we imitated how the user will interact with it?
+                <pre><code class="jsx">
+test('should open when the accordion item is clicked', () => {
+    const itemTitle = 'Item #1';
+    render(&lt;Accordion items={items} /&gt;);
+
+    // I Looked for text on the page
+    screen.getByText(itemTitle);
+
+    // I can see that the item is collapsed
+    expect(screen.queryByText('description for item #1')).not.toBeInTheDocument();
+
+    // I clicked on it
+    userEvent.click(screen.getByText(itemTitle));
+
+    // I can now see the expanded content
+    screen.getByText('description for item #1');
+});
+                </code></pre>
+            </section>
         </section>
         <section>
+            <section>
+                <h2>How does testing-library work?</h2>
+                <aside class="notes">
+                    Ok so, how do we do things in testing library?
+
+                    With testing-library we focus on assertions and interaction by limiting ourselves only to things we can actually see/use
+
+                    For example, labels, imgAltText (remember screen readers see this) or just text on the screen.
+                    No more test ids or getting hidden input fields
+
+                    These methods can also all implicitly include assertions, so no more .toHaveLength(1)
+                    or toBeNull() assertions necessary
+                </aside>
+            </section>
             <section data-auto-animate >
                 <h2 data-id="header">Querying</h2>
                 <img class="stretch" src="img/query-matrix.png">
@@ -114,6 +147,7 @@ test('setOpenIndex sets the open index state properly', () => {
             </section>
             <section data-auto-animate >
                 <h2 data-id="header">Querying</h2>
+                <div>Get, Query and Find:</div>
                 <ul style="list-style: none">
                     <li>*ByLabelText</li>
                     <li>*ByRole</li>
@@ -123,28 +157,6 @@ test('setOpenIndex sets the open index state properly', () => {
                     <li>*ByDisplayValue</li>
                     <li>*ByTestId</li>
                 </ul>
-                <aside class="notes">
-                    Ok so, how do we do things in testing library?
-
-                    With testing-library we focus on assertions and interaction by limiting ourselves only to things we can actually see
-
-                    For example, labels, imgAltText (remember screen readers see this) or just text on the screen.
-                    No more test ids or getting hidden input fields
-
-                    These methods also all explictly include assertions, so no more .toHaveLength(1)
-                    or toBeNull() assertions necessary
-                </aside>
-            </section>
-            <section data-auto-animate>
-                <ul style="list-style: none">
-                    <li >At this point, we can and should just use react itself to render the component instead of mocking things</li>
-                </ul>
-                <div class="fragment">
-                    <h2 data-id="header">Hooray</h2>
-                    <ul style="list-style: none">
-                        <li class="exciting">This has basically removed enzyme</li>
-                    </ul>
-                </div>
             </section>
             <section data-auto-animate>
                 <h2 data-id="header">Custom matchers</h2>
@@ -154,49 +166,90 @@ test('setOpenIndex sets the open index state properly', () => {
                     <li>toBeEmpty</li>
                     <li>toBeInTheDocument</li>
                     <li>toBeRequired</li>
-                    <li>toBeInvalid</li>
+                    <li>toBeVisible</li>
                     <li>toHaveAttribute</li>
-                    <li>toHaveClass</li>
                     <li>toHaveValue</li>
+                    <li>toHavePlaceholderText</li>
                 </ul>
                 <aside class="notes">
                     Testing library also (optionally) extends expect with a bunch of custom matchers that help make a bunch of standard dom assertions easy
                 </aside>
             </section>
+            <section data-auto-animate>
+                <h2 data-id="header">Custom matchers</h2>
+                <pre><code class="js">
+expect(screen.getByRole('button')).toBeEnabled();
+
+expect(screen.queryByText(deletedItem)).not.toBeInTheDocument()
+                </code></pre>
+            </section>
+            <section>
+                <h2 class="exciting">User interaction</h2>
+                <div>For this I <b>STRONGLY</b> recommend using</div>
+                <div>@testing-library/user-event</div>
+                <div>For a more realistic recreation of the browser events</div>
+                <pre><code class="jsx">
+userEvent.click(screen.getByRole('button');
+userEvent.type('Hello world', screen.getByRole('textbox');
+                </code></pre>
+                <ul>
+                    <li>Fires mouseUp, click and mouseDown events</li>
+                    <li>fires all the keyDown/keyUp events</li>
+                </ul>
+            </section>
+        </section>
+        <section>
+            <section>
+                <h3>Recap:</h3>
+                <ul>
+                    <li>Library for querying DOM in your tests</li>
+                    <li>Simple API to imitate user interaction</li>
+                    <li>Encourages best practices (accessibility)</li>
+                    <li>Confidence, Maintainability, Reliability</li>
+                </ul>
+            </section>
+            <section>
+                <h3>I'm sold, how can I get started?</h3>
+                <ul>
+                    <li>It might already be in your codebase?</li>
+                    <li>Check the bootstrap repository</li>
+                </ul>
+                <br>
+                Get cracking!
+            </section>
         </section>
         <section>
             <section>
                 <pre>
-                    <code data-line-numbers="2-5|17-21|23-28" data-trim>
-export const ToDoApp = () => {
+                    <code data-line-numbers="2-5|17-21|23-28" data-trim class="jsx">
+const ToDoApp = () => {
     const [items, setItems] = React.useState([]);
-    const [text, setText] = React.useState("");
+    const [text, setText] = React.useState('');
 
     const handleChange = (e) => setText(e.target.value);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setText("");
+        setText('');
         setItems(items.concat(newItem));
     };
 
     return (
-        <div>
-          <h1>TODOS</h1>
+        &lt;div&gt;
+          &lt;h1>TODOS&lt;/h1&gt;
 
-          <ul>
+          &lt;ul&gt;
             {items.map((item) => (
-              <li key={item.id}>{item.text}</li>
+              &lt;li key={item.id}&gt;{item.text}&lt;/li&gt;
             ))}
-          </ul>
+          &lt;/ul&gt;
 
-          <form onSubmit={handleSubmit}>
-            <label htmlFor="new-todo">What needs to be done?</label>
-            <br/>
-            <input id="new-todo" value={text} onChange={handleChange}/>
-            <button>Add #{items.length + 1}</button>
-          </form>
-        </div>
+          &lt;form onSubmit={handleSubmit}&gt;
+            &lt;label htmlFor="new-todo"&gt;What needs to be done?&lt;/label&gt;
+            &lt;input id="new-todo" value={text} onChange={handleChange}/&gt;
+            &lt;button&gt;Add #{items.length + 1}&lt;/button&gt;
+          &lt;/form&gt;
+        &lt;/div&gt;
     );
 };
                     </code>
@@ -208,24 +261,6 @@ export const ToDoApp = () => {
                 </a>
             </section>
         </section>
-        <section>
-            <section>
-                <h3>Recap:</h3>
-                <ul>
-                    <li>Library for querying a DOM in your tests</li>
-                    <li>Replacement for enzyme</li>
-                    <li>Provides a simple API</li>
-                    <li>Encourages best practices</li>
-                </ul>
-            </section>
-            <section>
-                <h3>I'm sold, how can I get started?</h3>
-                It's already in the codebase
-                <br>
-                Get cracking!
-            </section>
-        </section>
-
     </div>
 </div>
 
