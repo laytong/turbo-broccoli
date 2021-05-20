@@ -102,7 +102,7 @@ test('setOpenIndex sets the open index state properly', () => {
                 </aside>
             </section>
             <section>
-                What if we imitated how the user will interact with it?
+                What if our tests imitated how the user will interact?
                 <pre><code class="jsx">
 test('should open when the accordion item is clicked', () => {
     const itemTitle = 'Item #1';
@@ -158,6 +158,35 @@ test('should open when the accordion item is clicked', () => {
                     <li>*ByTestId</li>
                 </ul>
             </section>
+            <section data-auto-animate >
+                <h2 data-id="header">Querying</h2>
+                <pre>
+                    <code data-trim class="jsx">
+const DoubleButtonComponent = () => {
+    return (
+        <>
+            <button>Yes</button>
+            <button>No</button>
+        <>
+    )
+}
+                    </code>
+                    <code class="js">
+test('should have two buttons', () => {
+    render(&lt;DoubleButtonComponent /&gt;)
+
+    // Uses the accessible name to choose a particular button https://www.w3.org/TR/accname-1.1/
+    const yesButton = screen.getByRole('button', { name: 'Yes' })
+    screen.getByRole('button') // This will error because there are multiple buttons
+    const buttons = screen.getAllByRole('button')
+})
+                    </code>
+                </pre>
+                <aside class="notes">
+                    Got more than one button on the page?
+                    No problem you can pass options to getByRole to grab a specific button
+                </aside>
+            </section>
             <section data-auto-animate>
                 <h2 data-id="header">Custom matchers</h2>
                 <ul style="list-style: none">
@@ -183,6 +212,23 @@ expect(screen.getByRole('button')).toBeEnabled();
 expect(screen.queryByText(deletedItem)).not.toBeInTheDocument()
                 </code></pre>
             </section>
+            <section data-auto-animate>
+                <h2 data-id="header">Custom Matchers</h2>
+                <pre>
+                    <code data-trim class="js">
+test(() => {
+  const mock = jest.fn()
+  const options = [{ label: 'pick me', isChecked: false, id: 27 }]
+
+  render(&lt;CheckboxList onChange=&#123;mock&#125; options=&#123;options&#125; /&gt;)
+
+  const checkbox = screen.getByLabelText('pick me')
+  expect(checkbox).toBeEnabled()
+  expect(checkbox).not.toBeChecked()
+})
+                    </code>
+                </pre>
+            </section>
             <section>
                 <h2 class="exciting">User interaction</h2>
                 <div>For this I <b>STRONGLY</b> recommend using</div>
@@ -196,6 +242,51 @@ userEvent.type('Hello world', screen.getByRole('textbox');
                     <li>Fires mouseUp, click and mouseDown events</li>
                     <li>fires all the keyDown/keyUp events</li>
                 </ul>
+            </section>
+        </section>
+        <section>
+            <section data-auto-animate>
+                <h2 data-id="header">Examples</h2>
+                <h4>Appearance and disappearance</h4>
+                <pre>
+                    <code class="js">
+expect(screen.queryByRole('button')).not.toBeInTheDocument()
+screen.getByRole('button')
+                    </code>
+                </pre>
+            </section>
+            <section data-auto-animate>
+                <h2 data-id="header">Examples</h2>
+                <h4>Asynchronous changes</h4>
+                use <b>waitFor</b> or <b>findBy</b>. RTL's default timeout is 1000ms.
+                <pre>
+                    <code class="js">
+test('should show a button when request resolves', async () => {
+  render(&lt;MyComponent /&gt;)
+  expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  await waitFor(() => expect(mockAPI).toHaveBeenCalledTimes(1))
+  await screen.findByRole('button')
+})
+                    </code>
+                </pre>
+            </section>
+            <section data-auto-animate>
+                <h2 data-id="header">Examples</h2>
+                <h4>Context or State management</h4>
+                <pre>
+                    <code class="js">
+render(
+  &lt;CustomContext.Provider value={someStateHere}&gt;
+    &lt;YourComponent /&gt;
+  &lt;/CustomContext.Provider&gt;
+)
+                    </code>
+                </pre>
+                Under the hood RTL uses react's own renderer.
+                <br>
+                So this works just fine!
+                <br>
+                This also works for redux's connected components
             </section>
         </section>
         <section>
