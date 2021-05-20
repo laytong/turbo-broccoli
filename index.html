@@ -103,7 +103,7 @@ test('setOpenIndex sets the open index state properly', () => {
             </section>
             <section>
                 What if our tests imitated how the user will interact?
-                <pre><code class="jsx">
+                <pre><code class="jsx" data-trim>
 test('should open when the accordion item is clicked', () => {
     const itemTitle = 'Item #1';
     render(&lt;Accordion items={items} /&gt;);
@@ -235,13 +235,12 @@ test(() => {
                 <div>@testing-library/user-event</div>
                 <div>For a more realistic recreation of the browser events</div>
                 <pre><code class="jsx">
-userEvent.click(screen.getByRole('button');
-userEvent.type('Hello world', screen.getByRole('textbox');
+userEvent.click(screen.getByRole('button'));
+// Fires mouseUp, click and mouseDown events
+
+userEvent.type('Hello world', screen.getByRole('textbox'));
+// Fires all the keyDown/keyUp events
                 </code></pre>
-                <ul>
-                    <li>Fires mouseUp, click and mouseDown events</li>
-                    <li>fires all the keyDown/keyUp events</li>
-                </ul>
             </section>
         </section>
         <section>
@@ -249,8 +248,10 @@ userEvent.type('Hello world', screen.getByRole('textbox');
                 <h2 data-id="header">Examples</h2>
                 <h4>Appearance and disappearance</h4>
                 <pre>
-                    <code class="js">
+                    <code class="js" data-trim>
 expect(screen.queryByRole('button')).not.toBeInTheDocument()
+
+// Implict assertion
 screen.getByRole('button')
                     </code>
                 </pre>
