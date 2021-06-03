@@ -84,6 +84,11 @@
                 <blockquote class="fragment">
                     With shallow rendering, I can break my application and my tests say everything is still working.
                 </blockquote>
+                <aside class="notes">
+                    This means false negatives in my tests. (Bad maintainability)
+
+                    This means false positives in my tests. Arguably the worst (Bad reliability)
+                </aside>
             </section>
             <section>
                 <b>We might all be guilty of this at some point</b>
@@ -95,10 +100,19 @@ test('setOpenIndex sets the open index state properly', () => {
     expect(wrapper.state('openIndex')).toBe(1);
 })
                 </code></pre>
+                <div class="fragment">
+                    <code>onClick={() => setOpenIndex(1)}</code>
+                    <br>
+                    became <code>onClick={setOpenIndex}</code>
+                </div>
                 <aside class="notes">
-                    Anytime we refactor, say the name of isOpen, our test will break even though materially the component might still works identically as before
-                    Additionally perhaps we still change the value of isOpen, but perhaps it now does something entirely different,
-                    We've succeeded in testing the implementation detail but not the material impact of the change. Perhaps it opens an entirely different component now?
+                    Let's say we refactor, the name of isOpen in our component. We do a quick check in the browser, everything's working great.<br>
+                    We commit it and fire it off to CI.<br>
+                    Our test breaks. . . . even though materially the component still works identically as before and we even checked it. This is a frustrating false negative!<br>
+                    <br>
+                    Additionally perhaps we keep the value of isOpen the same, but perhaps it now does something entirely different,<br>
+                    We've succeeded in testing the implementation detail but not the material impact of the change. In our test, calling setOpenIndex(1); does the right thing and our tests passes<br>
+                    But what if in our component we forgot to pass the 1 because we refactored to remove an inline function onClick={() => setOpenIndex(1)} became onClick={setOpenIndex}<br>
                 </aside>
             </section>
             <section>
@@ -108,19 +122,23 @@ test('should open when the accordion item is clicked', () => {
     const itemTitle = 'Item #1';
     render(&lt;Accordion items={items} /&gt;);
 
-    // I Looked for text on the page
+    // I looked for (and found) text on the page
     screen.getByText(itemTitle);
 
-    // I can see that the item is collapsed
+    // I can see that the item is not present on the page (because it is collapsed)
     expect(screen.queryByText('description for item #1')).not.toBeInTheDocument();
 
-    // I clicked on it
+    // I clicked on the title to expand the content
     userEvent.click(screen.getByText(itemTitle));
 
-    // I can now see the expanded content
+    // The content now shows up!
     screen.getByText('description for item #1');
 });
                 </code></pre>
+                <aside class="notes">
+                    Now in this test we're only checking the material impacts of our code.
+                    We're not interested in how it's implemented and we can refactor our code until the cows come home. As long as the component still does what it is supposed to do we will get reliable maintainable tests. Hooray!
+                </aside>
             </section>
         </section>
         <section>
@@ -128,56 +146,61 @@ test('should open when the accordion item is clicked', () => {
                 <h2>How does testing-library work?</h2>
                 <aside class="notes">
                     Ok so, how do we do things in testing library?
-
+                    <br>
                     With testing-library we focus on assertions and interaction by limiting ourselves only to things we can actually see/use
-
+                    <br>
                     For example, labels, imgAltText (remember screen readers see this) or just text on the screen.
                     No more test ids or getting hidden input fields
-
-                    These methods can also all implicitly include assertions, so no more .toHaveLength(1)
-                    or toBeNull() assertions necessary
                 </aside>
             </section>
             <section data-auto-animate >
                 <h2 data-id="header">Querying</h2>
-                <img class="stretch" src="img/query-matrix.png">
+                <img class="stretch" src="img/query-matrix.png" alt="list of query prefixes">
                 <aside class="notes">
                     Here is a little matrix to explain the different types of querying tools we have available to us in testing-library
+                    <br>
+                    Some of these methods also implicitly include assertions/throws, so no more .toHaveLength(1) or toBeNull() assertions necessary
                 </aside>
             </section>
             <section data-auto-animate >
                 <h2 data-id="header">Querying</h2>
                 <div>Get, Query and Find:</div>
                 <ul style="list-style: none">
-                    <li>*ByLabelText</li>
                     <li>*ByRole</li>
+                    <li>*ByLabelText</li>
                     <li>*ByText</li>
                     <li>*ByAltText</li>
                     <li>*ByTitle</li>
                     <li>*ByDisplayValue</li>
                     <li>*ByTestId</li>
                 </ul>
+                <aside class="notes">
+                    These are generally a11y focused which actually makes writing your tests easier if you've ensure they are a11y compliant components
+                    <br>
+                    roles, labels, altText, placeholder text
+                    <br>
+                    You should generally try and avoid using byTestId, but it's there as an escape hatch as is document.querySelector('some class')
+                </aside>
             </section>
             <section data-auto-animate >
                 <h2 data-id="header">Querying</h2>
                 <pre>
                     <code data-trim class="jsx">
-const DoubleButtonComponent = () => {
-    return (
-        <>
-            <button>Yes</button>
-            <button>No</button>
-        <>
-    )
-}
+const DoubleButtonComponent = () => (
+    <>
+        <button>Yes</button>
+        <button>No</button>
+    <>
+)
                     </code>
                     <code class="js">
 test('should have two buttons', () => {
     render(&lt;DoubleButtonComponent /&gt;)
+    // This will error because there are multiple buttons
+    screen.getByRole('button')
 
     // Uses the accessible name to choose a particular button https://www.w3.org/TR/accname-1.1/
-    const yesButton = screen.getByRole('button', { name: 'Yes' })
-    screen.getByRole('button') // This will error because there are multiple buttons
+    screen.getByRole('button', { name: 'Yes' })
     const buttons = screen.getAllByRole('button')
 })
                     </code>
@@ -202,6 +225,7 @@ test('should have two buttons', () => {
                 </ul>
                 <aside class="notes">
                     Testing library also (optionally) extends expect with a bunch of custom matchers that help make a bunch of standard dom assertions easy
+                    These also have a11y in mind
                 </aside>
             </section>
             <section data-auto-animate>
